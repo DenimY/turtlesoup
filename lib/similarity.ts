@@ -13,7 +13,7 @@ export async function calcSimilarity(
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-lite-preview-06-17",
+    model: "gemini-2.5-flash-lite",
     contents: SIMILARITY_PROMPT(word, trimmed),
     config: {
       systemInstruction: "You are a strict word similarity scorer. Reply only with 'SCORE: <number>'.",

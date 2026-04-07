@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-lite-preview-06-17",
+    model: "gemini-2.5-flash-lite",
     contents: WORD_GENERATION_PROMPT,
     config: { maxOutputTokens: 100 },
   });
