@@ -13,7 +13,7 @@
 | React | 19.2.4 |
 | TypeScript | 5.x |
 | Tailwind CSS | 4.x |
-| @anthropic-ai/sdk | 최신 |
+| groq-sdk | 최신 |
 | @supabase/supabase-js | 최신 |
 | Node.js | 20.x (권장) |
 

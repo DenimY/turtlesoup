@@ -1,9 +1,9 @@
-import Anthropic from "@anthropic-ai/sdk";
+import Groq from "groq-sdk";
 import { getSupabase } from "@/lib/supabase";
 import { SYSTEM_PROMPT } from "@/lib/prompts";
 import { calcSimilarity } from "@/lib/similarity";
 
-const client = new Anthropic();
+const client = new Groq();
 
 export async function POST(request: Request) {
   const { question } = await request.json();
@@ -36,15 +36,16 @@ export async function POST(request: Request) {
   }
 
   // 일반 질문 답변
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
+  const completion = await client.chat.completions.create({
+    model: "llama-3.1-8b-instant",
     max_tokens: 50,
-    system: SYSTEM_PROMPT(word),
-    messages: [{ role: "user", content: question }],
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT(word) },
+      { role: "user", content: question },
+    ],
   });
 
-  const answer =
-    message.content[0].type === "text" ? message.content[0].text : "...";
+  const answer = completion.choices[0]?.message?.content ?? "...";
 
   return Response.json({ answer, correct: false, score });
 }

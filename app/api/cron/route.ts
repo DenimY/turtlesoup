@@ -1,8 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
+import Groq from "groq-sdk";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { WORD_GENERATION_PROMPT } from "@/lib/prompts";
 
-const client = new Anthropic();
+const client = new Groq();
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -28,14 +28,13 @@ export async function GET(request: Request) {
     return Response.json({ message: "이미 있어.", date });
   }
 
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
+  const completion = await client.chat.completions.create({
+    model: "llama-3.1-8b-instant",
     max_tokens: 100,
     messages: [{ role: "user", content: WORD_GENERATION_PROMPT }],
   });
 
-  const text =
-    message.content[0].type === "text" ? message.content[0].text : "";
+  const text = completion.choices[0]?.message?.content ?? "";
   const parsed = JSON.parse(text);
 
   await supabaseAdmin.from("words").insert({

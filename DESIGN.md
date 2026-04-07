@@ -14,7 +14,7 @@
 | 프레임워크 | Next.js 16 (App Router) |
 | 호스팅 | Vercel (Cron Jobs 포함) |
 | DB | Supabase (PostgreSQL) |
-| AI | Anthropic Claude API |
+| AI | Groq API (llama-3.1-8b-instant) |
 | 스타일 | Tailwind CSS 4 |
 
 ---
@@ -199,7 +199,7 @@ Claude Haiku에게 0~100 점수를 요청.
 ## 환경변수
 
 ```env
-ANTHROPIC_API_KEY=
+GROQ_API_KEY=
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=

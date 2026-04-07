@@ -1,7 +1,7 @@
-import Anthropic from "@anthropic-ai/sdk";
+import Groq from "groq-sdk";
 import { SIMILARITY_PROMPT } from "./prompts";
 
-const client = new Anthropic();
+const client = new Groq();
 
 export async function calcSimilarity(
   word: string,
@@ -13,14 +13,13 @@ export async function calcSimilarity(
   // 완전 일치
   if (trimmed === word) return 100;
 
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
+  const completion = await client.chat.completions.create({
+    model: "llama-3.1-8b-instant",
     max_tokens: 20,
     messages: [{ role: "user", content: SIMILARITY_PROMPT(word, trimmed) }],
   });
 
-  const text =
-    message.content[0].type === "text" ? message.content[0].text : "";
+  const text = completion.choices[0]?.message?.content ?? "";
   const match = text.match(/SCORE:\s*(\d+)/);
   if (!match) return 0;
 
