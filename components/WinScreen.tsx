@@ -37,29 +37,29 @@ export default function WinScreen({ word, qCount, elapsedSec, rank }: Props) {
 
   return (
     <>
-      <div className="flex flex-col items-center gap-5 text-center">
-        <div className="text-4xl">🎉</div>
-        <div>
-          <p className="text-2xl font-bold text-zinc-800">{word}</p>
-          <p className="mt-1 text-sm text-zinc-400">정답이야.</p>
+      <div className="w-full max-w-xs rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-5">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xl">🎉</span>
+          <span className="font-bold text-emerald-700">정답!</span>
         </div>
-        <div className="flex gap-6 text-sm text-zinc-500">
-          <div className="flex flex-col items-center">
-            <span className="text-xl font-semibold text-zinc-700">{qCount}</span>
+        <p className="text-2xl font-bold text-zinc-800 mb-4">{word}</p>
+        <div className="flex gap-5 text-sm text-zinc-500 mb-4">
+          <div className="flex flex-col">
+            <span className="text-lg font-semibold text-zinc-700">{qCount}개</span>
             <span>질문</span>
           </div>
-          <div className="flex flex-col items-center">
-            <span className="text-xl font-semibold text-zinc-700">{formatTime(elapsedSec)}</span>
+          <div className="flex flex-col">
+            <span className="text-lg font-semibold text-zinc-700">{formatTime(elapsedSec)}</span>
             <span>시간</span>
           </div>
-          <div className="flex flex-col items-center">
-            <span className="text-xl font-semibold text-zinc-700">{rank}번째</span>
+          <div className="flex flex-col">
+            <span className="text-lg font-semibold text-zinc-700">{rank}번째</span>
             <span>정답자</span>
           </div>
         </div>
         <button
           onClick={() => setShowShare(true)}
-          className="rounded-full bg-zinc-800 px-6 py-2.5 text-sm font-medium text-white hover:bg-zinc-700"
+          className="w-full rounded-full bg-emerald-600 py-2 text-sm font-medium text-white hover:bg-emerald-500"
         >
           결과 공유
         </button>

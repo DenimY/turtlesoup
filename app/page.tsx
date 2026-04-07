@@ -60,8 +60,10 @@ export default function Home() {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [log]);
 
+  const MAX_Q = 100;
+
   async function handleQuestion(question: string) {
-    if (won) return;
+    if (won || qCount >= MAX_Q) return;
 
     // 타이머 시작
     if (!startTimeRef.current) {
@@ -129,38 +131,39 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-full flex-col items-center justify-between gap-6 px-6 py-10">
-      {/* 상단: 거북이 + 말풍선 */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 w-full">
-        {won && winData ? (
+    <main className="flex min-h-full flex-col justify-between gap-4 py-10">
+      {/* 제목 */}
+      <div className="flex flex-col items-center gap-1 px-6">
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">🐢 바다거북 스프</h1>
+        <p className="text-sm text-zinc-400">스무고개로 오늘의 단어를 맞춰봐.</p>
+      </div>
+
+      {/* 중단: 스탯 + 정답 카드 + 질문 로그 */}
+      <div className="flex flex-1 flex-col items-center gap-4 px-6 overflow-hidden">
+        <StatsBar qCount={qCount} startTime={startTime} score={score} />
+        {won && winData && (
           <WinScreen
             word={winData.word}
             qCount={winData.qCount}
             elapsedSec={winData.elapsedSec}
             rank={winData.rank}
           />
-        ) : (
-          <>
-            <TurtleChat bubble={bubble} isThinking={isThinking} />
-            <StatsBar qCount={qCount} startTime={startTime} score={score} />
-          </>
+        )}
+        {log.length > 0 && (
+          <div className="w-full max-w-xs space-y-2 max-h-60 overflow-y-auto">
+            {log.map((entry, i) => (
+              <ChatBubble key={i} question={entry.question} answer={entry.answer} />
+            ))}
+            <div ref={logEndRef} />
+          </div>
         )}
       </div>
 
-      {/* 중단: 질문 로그 */}
-      {!won && log.length > 0 && (
-        <div className="w-full max-w-xs space-y-2 max-h-40 overflow-y-auto py-2">
-          {log.map((entry, i) => (
-            <ChatBubble key={i} question={entry.question} answer={entry.answer} />
-          ))}
-          <div ref={logEndRef} />
-        </div>
-      )}
-
-      {/* 하단: 입력창 */}
-      {!won && (
-        <InputBar onSubmit={handleQuestion} disabled={isThinking} />
-      )}
+      {/* 하단: 입력창 + 거북이 */}
+      <div className="flex flex-col items-center gap-4">
+        <InputBar onSubmit={handleQuestion} disabled={isThinking || won || qCount >= MAX_Q} />
+        <TurtleChat bubble={bubble} isThinking={isThinking} />
+      </div>
     </main>
   );
 }

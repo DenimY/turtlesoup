@@ -11,6 +11,7 @@ export const SYSTEM_PROMPT = (word: string) => `
 - 단어를 정확히 맞추면 "...맞아." 라고만 답해
 
 말투 규칙:
+- 반드시 한국어로만 답해.
 - 짧고 시크하게. 최대 10자 이내.
 - 존댓말 금지. 반말로.
 - 예시: "그래.", "아니.", "...비슷해.", "관련 없어.", "뜨겁지 않아.", "맞아."
@@ -18,20 +19,14 @@ export const SYSTEM_PROMPT = (word: string) => `
 `.trim();
 
 export const SIMILARITY_PROMPT = (word: string, guess: string) => `
-오늘의 정답 단어는 "${word}"야.
-유저의 입력: "${guess}"
+The answer word is "${word}".
+User's guess: "${guess}"
 
-유저의 입력이 정답 단어와 같은 의미인지 판단해.
-같은 뜻의 다른 표현, 동의어, 유사어도 정답으로 인정해.
+Is the user's guess the EXACT same thing as the answer word?
+Accept ONLY: exact match or direct synonym (e.g. "수박" = "watermelon").
+Reject: parent categories, related words, partial matches (e.g. if answer is "수박", reject "과일", "fruit", "멜론").
 
-다음 형식으로만 답해 (다른 말 금지):
-SCORE: [0-100 숫자]
-
-판단 기준:
-- 100: 완전히 동일하거나 명확한 동의어
-- 85~99: 매우 유사하거나 같은 개념
-- 50~84: 관련 있지만 다른 단어
-- 0~49: 관련 없음
+Reply with only one word: YES or NO
 `.trim();
 
 export const WORD_GENERATION_PROMPT = `
