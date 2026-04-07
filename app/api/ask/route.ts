@@ -3,9 +3,8 @@ import { getSupabase } from "@/lib/supabase";
 import { SYSTEM_PROMPT } from "@/lib/prompts";
 import { calcSimilarity } from "@/lib/similarity";
 
-const client = new Groq();
-
 export async function POST(request: Request) {
+  const client = new Groq();
   const { question } = await request.json();
 
   if (!question?.trim()) {

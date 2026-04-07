@@ -2,9 +2,8 @@ import Groq from "groq-sdk";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { WORD_GENERATION_PROMPT } from "@/lib/prompts";
 
-const client = new Groq();
-
 export async function GET(request: Request) {
+  const client = new Groq();
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return new Response("Unauthorized", { status: 401 });

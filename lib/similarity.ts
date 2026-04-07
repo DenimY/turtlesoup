@@ -1,8 +1,6 @@
 import Groq from "groq-sdk";
 import { SIMILARITY_PROMPT } from "./prompts";
 
-const client = new Groq();
-
 export async function calcSimilarity(
   word: string,
   guess: string
@@ -13,6 +11,7 @@ export async function calcSimilarity(
   // 완전 일치
   if (trimmed === word) return 100;
 
+  const client = new Groq();
   const completion = await client.chat.completions.create({
     model: "llama-3.1-8b-instant",
     max_tokens: 20,
