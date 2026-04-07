@@ -14,16 +14,19 @@ export async function calcSimilarity(
   const client = new Groq();
   const completion = await client.chat.completions.create({
     model: "llama-3.1-8b-instant",
-    max_tokens: 5,
+    max_tokens: 10,
     messages: [
       {
         role: "system",
-        content: "You are a strict word comparison judge. Reply only YES or NO.",
+        content: "You are a strict word similarity scorer. Reply only with 'SCORE: <number>'.",
       },
       { role: "user", content: SIMILARITY_PROMPT(word, trimmed) },
     ],
   });
 
-  const text = (completion.choices[0]?.message?.content ?? "").toUpperCase().trim();
-  return text.startsWith("YES") ? 100 : 0;
+  const text = completion.choices[0]?.message?.content ?? "";
+  const match = text.match(/SCORE:\s*(\d+)/);
+  if (!match) return 0;
+
+  return Math.min(100, Math.max(0, parseInt(match[1], 10)));
 }

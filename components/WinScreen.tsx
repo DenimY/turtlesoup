@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import ShareModal from "./ShareModal";
+import RankingBoard from "./RankingBoard";
 
 type Props = {
   word: string;
@@ -64,6 +65,8 @@ export default function WinScreen({ word, qCount, elapsedSec, rank }: Props) {
           결과 공유
         </button>
       </div>
+
+      <RankingBoard myRank={rank} />
 
       {showShare && (
         <ShareModal text={shareText} onClose={() => setShowShare(false)} />
