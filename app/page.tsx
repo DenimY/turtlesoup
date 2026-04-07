@@ -23,7 +23,7 @@ type WinData = {
 };
 
 // 정답 메타 단어 목록
-const META_WORDS = ["정답", "답", "맞아", "맞춰", "모르겠어", "모름"];
+const META_WORDS = ["정답이 뭐야", "답이 뭐야", "뭔지 말해", "답 알려줘", "정답 알려줘", "뭐야 정답", "정답을 말해", "모르겠어", "모름"];
 
 function getOrCreateSessionId(): string {
   const key = "ts_session";
@@ -68,7 +68,8 @@ export default function Home() {
   const MAX_Q = 100;
 
   function isMetaWord(text: string) {
-    return META_WORDS.some((w) => text.trim() === w);
+    const t = text.trim();
+    return META_WORDS.some((w) => t.includes(w));
   }
 
   async function handleQuestion(question: string) {
