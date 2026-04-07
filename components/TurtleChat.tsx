@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 
 type Props = {
   bubble: string;
@@ -8,6 +9,8 @@ type Props = {
 };
 
 export default function TurtleChat({ bubble, isThinking }: Props) {
+  const [imgError, setImgError] = useState(false);
+
   return (
     <div className="flex flex-col items-center gap-4">
       {/* 말풍선 */}
@@ -26,16 +29,23 @@ export default function TurtleChat({ bubble, isThinking }: Props) {
         <div className="absolute bottom-[-12px] left-1/2 -translate-x-1/2 border-x-[11px] border-t-[11px] border-x-transparent border-t-zinc-200" style={{ zIndex: -1 }} />
       </div>
 
-      {/* 거북이 이미지 */}
-      <div className="relative h-36 w-36 select-none">
-        <Image
-          src="/turtle.png"
-          alt="거북이"
-          fill
-          className="object-contain drop-shadow-md"
-          priority
-        />
-      </div>
+      {/* 거북이 */}
+      {imgError ? (
+        <div className="flex h-36 w-36 items-center justify-center select-none text-8xl">
+          🐢
+        </div>
+      ) : (
+        <div className="relative h-36 w-36 select-none">
+          <Image
+            src="/turtle.png"
+            alt="거북이"
+            fill
+            className="object-contain drop-shadow-md"
+            priority
+            onError={() => setImgError(true)}
+          />
+        </div>
+      )}
     </div>
   );
 }
