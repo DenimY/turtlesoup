@@ -1,9 +1,8 @@
-import Groq from "groq-sdk";
+import { GoogleGenAI } from "@google/genai";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { WORD_GENERATION_PROMPT } from "@/lib/prompts";
 
 export async function GET(request: Request) {
-  const client = new Groq();
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return new Response("Unauthorized", { status: 401 });
@@ -16,7 +15,6 @@ export async function GET(request: Request) {
   });
 
   const supabaseAdmin = getSupabaseAdmin();
-  // 이미 단어가 있으면 스킵
   const { data: existing } = await supabaseAdmin
     .from("words")
     .select("id")
@@ -27,14 +25,19 @@ export async function GET(request: Request) {
     return Response.json({ message: "이미 있어.", date });
   }
 
-  const completion = await client.chat.completions.create({
-    model: "llama-3.1-8b-instant",
-    max_tokens: 100,
-    messages: [{ role: "user", content: WORD_GENERATION_PROMPT }],
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash-lite-preview-06-17",
+    contents: WORD_GENERATION_PROMPT,
+    config: { maxOutputTokens: 100 },
   });
 
-  const text = completion.choices[0]?.message?.content ?? "";
-  const parsed = JSON.parse(text);
+  const text = response.text ?? "";
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    return Response.json({ error: "단어 생성 실패" }, { status: 500 });
+  }
+  const parsed = JSON.parse(jsonMatch[0]);
 
   await supabaseAdmin.from("words").insert({
     date,

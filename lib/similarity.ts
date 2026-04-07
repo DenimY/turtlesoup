@@ -1,4 +1,4 @@
-import Groq from "groq-sdk";
+import { GoogleGenAI } from "@google/genai";
 import { SIMILARITY_PROMPT } from "./prompts";
 
 export async function calcSimilarity(
@@ -8,23 +8,20 @@ export async function calcSimilarity(
   const trimmed = guess.trim();
   if (!trimmed) return 0;
 
-  // 완전 일치
   if (trimmed === word) return 100;
 
-  const client = new Groq();
-  const completion = await client.chat.completions.create({
-    model: "llama-3.1-8b-instant",
-    max_tokens: 10,
-    messages: [
-      {
-        role: "system",
-        content: "You are a strict word similarity scorer. Reply only with 'SCORE: <number>'.",
-      },
-      { role: "user", content: SIMILARITY_PROMPT(word, trimmed) },
-    ],
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash-lite-preview-06-17",
+    contents: SIMILARITY_PROMPT(word, trimmed),
+    config: {
+      systemInstruction: "You are a strict word similarity scorer. Reply only with 'SCORE: <number>'.",
+      maxOutputTokens: 10,
+    },
   });
 
-  const text = completion.choices[0]?.message?.content ?? "";
+  const text = response.text ?? "";
   const match = text.match(/SCORE:\s*(\d+)/);
   if (!match) return 0;
 
