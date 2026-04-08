@@ -1,9 +1,7 @@
 import { getSupabase, getSupabaseAdmin } from "@/lib/supabase";
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  console.log("[solve] received body:", JSON.stringify(body));
-  const { session_id, q_count, elapsed_sec, nickname } = body;
+  const { session_id, q_count, elapsed_sec, nickname } = await request.json();
 
   if (!session_id) {
     return Response.json({ error: "세션 없어." }, { status: 400 });

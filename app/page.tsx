@@ -69,7 +69,10 @@ export default function Home() {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [log]);
 
-  const MAX_Q = 100;
+  const BASE_Q = 20;
+  const BONUS_Q = 10;
+  const [maxQ, setMaxQ] = useState(BASE_Q);
+  const [isWatchingAd, setIsWatchingAd] = useState(false);
 
   function isMetaWord(text: string) {
     const t = text.trim();
@@ -77,7 +80,7 @@ export default function Home() {
   }
 
   async function handleQuestion(question: string) {
-    if (won || qCount >= MAX_Q) return;
+    if (won || qCount >= maxQ) return;
 
     if (isMetaWord(question)) {
       setBubble("그걸 물어보면 어떡해.");
@@ -120,7 +123,6 @@ export default function Home() {
   }
 
   async function handleNicknameSubmit(nickname: string) {
-    console.log("[nickname] submitted:", JSON.stringify(nickname));
     setShowNickname(false);
     if (!pendingWin) return;
 
@@ -172,7 +174,7 @@ export default function Home() {
       <div className="mx-auto w-full max-w-xs space-y-2">
         <div className="rounded-xl bg-zinc-50 px-4 py-3 text-xs text-zinc-500 space-y-1">
           <p>💬 질문으로 단어를 추측해봐. 거북이가 예/아니오로 답해줘.</p>
-          <p>🎯 단어를 알아냈으면 그냥 입력하면 돼. 질문 횟수 제한은 100개.</p>
+          <p>🎯 단어를 알아냈으면 그냥 입력하면 돼. 기본 질문 횟수는 20개.</p>
         </div>
         <div className="flex items-center gap-2 px-1">
           <span className="text-xs text-zinc-400">말투</span>
@@ -215,7 +217,22 @@ export default function Home() {
 
       {/* 하단: 입력창 + 거북이 */}
       <div className="flex flex-col items-center gap-4">
-        <InputBar onSubmit={handleQuestion} disabled={isThinking || won || qCount >= MAX_Q} />
+        {!won && qCount >= maxQ && (
+          <button
+            onClick={() => {
+              setIsWatchingAd(true);
+              setTimeout(() => {
+                setMaxQ((prev) => prev + BONUS_Q);
+                setIsWatchingAd(false);
+              }, 5000);
+            }}
+            disabled={isWatchingAd}
+            className="rounded-full bg-amber-400 px-5 py-2 text-sm font-medium text-white hover:bg-amber-300 disabled:opacity-50 transition-colors"
+          >
+            {isWatchingAd ? "광고 시청 중... 잠시만 기다려줘" : "광고 보고 질문 10회 추가"}
+          </button>
+        )}
+        <InputBar onSubmit={handleQuestion} disabled={isThinking || won || qCount >= maxQ || isWatchingAd} />
         <TurtleChat bubble={bubble} isThinking={isThinking} />
       </div>
     </main>
