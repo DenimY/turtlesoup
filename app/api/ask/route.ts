@@ -60,8 +60,11 @@ export async function POST(request: Request) {
     }
 
     // 3. 유사도 측정
-    const score = await calcSimilarity(word, question);
-    console.log(`[유사도] word="${word}" | question="${question}" | score=${score}`);
+    const rawScore = await calcSimilarity(word, question);
+    const similarityError = rawScore === -1;
+    const score = similarityError ? 0 : rawScore;
+    if (similarityError) console.error(`[similarity] 서버 오류 - word="${word}", question="${question}"`);
+    else console.log(`[유사도] word="${word}" | question="${question}" | score=${score}`);
 
     if (score >= 100) {
       console.log("[정답] 유사도 100 → Gemini 호출 없음");
@@ -79,6 +82,10 @@ export async function POST(request: Request) {
 
     if (!isQuestion) {
       console.log(`[Gemini] 호출 없음 (단어 추측: "${question}")`);
+
+      if (similarityError) {
+        return Response.json({ answer: "나도 모르겠어.", correct: false, score: 0, isQuestion: false, _dev: "similarity_error" });
+      }
 
       const guessAnswer =
         score >= 80 ? pick(
@@ -101,7 +108,7 @@ export async function POST(request: Request) {
           t === "grumpy"  ? ["전혀 관련 없잖아.", "완전 딴 얘기야.", "이게 뭐야."] :
                             ["전혀 아닌 것 같은데!", "완전 다른 거야~", "힌트를 좀 더 모아봐!"]
         );
-      return Response.json({ answer: guessAnswer, correct: false, score, isQuestion: false });
+      return Response.json({ answer: guessAnswer, correct: false, score, isQuestion: false, _dev: similarityError ? "similarity_error" : undefined });
     }
 
     // 4. Gemini 호출
@@ -117,7 +124,7 @@ export async function POST(request: Request) {
 
     const answer = response.text ?? "...";
 
-    return Response.json({ answer, correct: false, score, isQuestion: true });
+    return Response.json({ answer, correct: false, score, isQuestion: true, _dev: similarityError ? "similarity_error" : undefined });
   } catch (err) {
     console.error("[ask] error:", err);
     return Response.json({ error: "서버 오류가 발생했어." }, { status: 500 });

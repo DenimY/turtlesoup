@@ -11,8 +11,11 @@ export async function calcSimilarity(
 
   if (!url) {
     console.error("[similarity] SIMILARITY_SERVER_URL 환경변수 없음");
-    return 0;
+    return -1;
   }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
 
   try {
     console.log(`[similarity] 요청: word="${word}", guess="${trimmed}"`);
@@ -23,18 +26,26 @@ export async function calcSimilarity(
         ...(secret ? { "x-api-secret": secret } : {}),
       },
       body: JSON.stringify({ word, guess: trimmed }),
+      signal: controller.signal,
     });
 
+    clearTimeout(timeout);
+
     if (!res.ok) {
-      console.error(`[similarity] 응답 에러: ${res.status}`);
-      return 0;
+      console.error(`[similarity] HTTP 에러: ${res.status}`);
+      return -1;
     }
 
     const data = await res.json();
     console.log(`[similarity] 결과: score=${data.score}`);
     return Math.min(100, Math.max(0, data.score ?? 0));
-  } catch (err) {
-    console.error("[similarity] 요청 실패:", err);
-    return 0;
+  } catch (err: unknown) {
+    clearTimeout(timeout);
+    if (err instanceof Error && err.name === "AbortError") {
+      console.error("[similarity] 타임아웃 (5s 초과)");
+    } else {
+      console.error("[similarity] 요청 실패:", err);
+    }
+    return -1;
   }
 }

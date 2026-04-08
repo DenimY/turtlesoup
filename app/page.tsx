@@ -145,6 +145,10 @@ export default function Home() {
     });
     const data = await res.json();
 
+    if (data._dev === "similarity_error") {
+      console.warn("[DEV] similarity-server 응답 실패 — 점수가 0으로 처리됨. Railway 배포 상태 확인 필요.");
+    }
+
     const nextCount = data.isQuestion ? qCount + 1 : qCount;
     if (data.isQuestion) setQCount(nextCount);
 
