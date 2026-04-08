@@ -10,6 +10,7 @@ type LogEntry = {
 
 type Props = {
   qCount: number;
+  maxQ: number;
   startTime: number | null;
   score: number;
   bestGuess: { word: string; score: number } | null;
@@ -22,7 +23,7 @@ function formatTime(sec: number) {
   return `${m}:${s}`;
 }
 
-export default function StatsBar({ qCount, startTime, score, bestGuess, log }: Props) {
+export default function StatsBar({ qCount, maxQ, startTime, score, bestGuess, log }: Props) {
   const [elapsed, setElapsed] = useState(0);
   const [open, setOpen] = useState(false);
 
@@ -89,9 +90,12 @@ export default function StatsBar({ qCount, startTime, score, bestGuess, log }: P
         </div>
       )}
 
-      {/* 질문수 / 시간 */}
+      {/* 질문수 / 남은 횟수 / 시간 */}
       <div className="flex gap-4 text-xs text-zinc-400">
         <span>질문 {qCount}개</span>
+        <span className={qCount >= maxQ ? "text-red-400 font-semibold" : ""}>
+          남은 횟수 {Math.max(0, maxQ - qCount)}개
+        </span>
         {startTime && <span>{formatTime(elapsed)}</span>}
       </div>
     </div>

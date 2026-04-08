@@ -13,6 +13,7 @@ type LogEntry = {
   question: string;
   answer: string;
   score: number;
+  isQuestion: boolean;
 };
 
 type WinData = {
@@ -94,8 +95,6 @@ export default function Home() {
     }
 
     setIsThinking(true);
-    const nextCount = qCount + 1;
-    setQCount(nextCount);
 
     const res = await fetch("/api/ask", {
       method: "POST",
@@ -104,6 +103,10 @@ export default function Home() {
     });
     const data = await res.json();
 
+    // 질문일 때만 횟수 차감
+    const nextCount = data.isQuestion ? qCount + 1 : qCount;
+    if (data.isQuestion) setQCount(nextCount);
+
     setIsThinking(false);
     setBubble(data.answer);
     const newScore = data.score ?? 0;
@@ -111,7 +114,7 @@ export default function Home() {
     if (newScore > 0 && (bestGuess === null || newScore > bestGuess.score)) {
       setBestGuess({ word: question, score: newScore });
     }
-    setLog((prev) => [...prev, { question, answer: data.answer, score: newScore }]);
+    setLog((prev) => [...prev, { question, answer: data.answer, score: newScore, isQuestion: !!data.isQuestion }]);
 
     if (data.correct) {
       const elapsedSec = startTimeRef.current
@@ -196,7 +199,7 @@ export default function Home() {
 
       {/* 중단: 스탯 + 정답 카드 + 질문 로그 */}
       <div className="flex flex-1 flex-col items-center gap-4 px-6 overflow-hidden">
-        <StatsBar qCount={qCount} startTime={startTime} score={score} bestGuess={bestGuess} log={log} />
+        <StatsBar qCount={qCount} maxQ={maxQ} startTime={startTime} score={score} bestGuess={bestGuess} log={log} />
         {won && winData && (
           <WinScreen
             word={winData.word}
@@ -208,7 +211,7 @@ export default function Home() {
         {log.length > 0 && (
           <div className="w-full max-w-xs space-y-2 max-h-60 overflow-y-auto">
             {log.map((entry, i) => (
-              <ChatBubble key={i} question={entry.question} answer={entry.answer} />
+              <ChatBubble key={i} question={entry.question} answer={entry.answer} isQuestion={entry.isQuestion} />
             ))}
             <div ref={logEndRef} />
           </div>

@@ -71,7 +71,7 @@ async def lifespan(app: FastAPI):
     global model
     download_model()
     print("[model] 로딩 중...")
-    model = KeyedVectors.load_word2vec_format(MODEL_PATH, binary=False)
+    model = KeyedVectors.load_word2vec_format(MODEL_PATH, binary=False, encoding="utf-8", unicode_errors="ignore")
     print("[model] 로딩 완료")
     yield
 

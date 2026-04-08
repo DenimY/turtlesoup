@@ -96,11 +96,55 @@ Gemini API 호출 없이 FastText 임베딩 기반 수학 연산으로 유사도
 
 ---
 
-## 배포
+## 로컬 실행
 
-- **플랫폼**: Railway
-- **빌드**: Dockerfile (소스에서 fasttext 빌드)
-- **모델 파일**: Railway Volume에 마운트 또는 서버 시작 시 다운로드
+### 1. Docker 이미지 빌드
+```bash
+cd similarity-server
+docker build -t turtlesoup-similarity .
+```
+
+### 2. 컨테이너 실행
+```bash
+docker run -p 8000:8000 -e API_SECRET=<시크릿키> turtlesoup-similarity
+```
+
+### 3. 헬스체크 (모델 다운로드 완료 후)
+```bash
+curl http://localhost:8000/health
+```
+
+### 4. 유사도 테스트
+```bash
+curl -X POST http://localhost:8000/similarity \
+  -H "Content-Type: application/json" \
+  -H "x-api-secret: <시크릿키>" \
+  -d '{"word": "수박", "guess": "참외"}'
+```
+
+> 최초 실행 시 `cc.ko.300.vec` (약 500MB) 다운로드 후 로딩. 로그에 `[model] 로딩 완료` 뜨면 준비 완료.
+
+---
+
+## 배포 (Railway)
+
+- **플랫폼**: Railway Hobby ($5/월)
+- **빌드**: Dockerfile 자동 감지
+- **Root Directory**: `similarity-server`
+- **환경변수**: `API_SECRET`
+- **모델 파일**: 서버 시작 시 자동 다운로드 (재시작마다 재다운로드)
+- **추후**: Railway Volume 마운트으로 재다운로드 방지 가능
+
+### Railway 환경변수
+| 키 | 값 |
+|---|---|
+| `API_SECRET` | 랜덤 시크릿 키 |
+
+### Vercel 환경변수 (turtlesoup)
+| 키 | 값 |
+|---|---|
+| `SIMILARITY_SERVER_URL` | Railway 배포 URL |
+| `SIMILARITY_API_SECRET` | similarity-server와 동일한 시크릿 키 |
 
 ---
 
