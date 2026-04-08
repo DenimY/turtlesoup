@@ -23,12 +23,15 @@ type WinData = {
   rank: number;
 };
 
-// 정답 메타 단어 목록
 const META_WORDS = [
   "정답이 뭐야", "답이 뭐야", "뭔지 말해", "답 알려줘", "정답 알려줘",
   "정답을 말해", "정답 말해", "대답해", "답해", "말해봐", "알려줘",
   "뭐야?", "뭐야", "뭔데", "모르겠어", "모름", "포기",
 ];
+
+const BASE_Q = 20;
+const BONUS_Q = 10;
+const GAME_KEY = "ts_game";
 
 function getOrCreateSessionId(): string {
   const key = "ts_session";
@@ -38,6 +41,10 @@ function getOrCreateSessionId(): string {
     localStorage.setItem(key, id);
   }
   return id;
+}
+
+function todayKST(): string {
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
 }
 
 export default function Home() {
@@ -54,26 +61,61 @@ export default function Home() {
   const [showNickname, setShowNickname] = useState(false);
   const [pendingWin, setPendingWin] = useState<{ qCount: number; elapsedSec: number } | null>(null);
   const [tone, setTone] = useState<ToneType>("friendly");
+  const [maxQ, setMaxQ] = useState(BASE_Q);
+  const [isWatchingAd, setIsWatchingAd] = useState(false);
 
   const sessionIdRef = useRef<string>("");
   const startTimeRef = useRef<number | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
+  // 초기 로드가 완료되기 전에 save effect가 빈 상태를 덮어쓰지 않도록 방지
+  const loadedRef = useRef(false);
 
+  // 마운트: 세션 ID, 오늘 단어 확인, 저장된 상태 복원
   useEffect(() => {
     sessionIdRef.current = getOrCreateSessionId();
     fetch("/api/today-word")
       .then((r) => { if (!r.ok) setNoWord(true); })
       .catch(() => setNoWord(true));
+
+    try {
+      const raw = localStorage.getItem(GAME_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (saved.date === todayKST()) {
+          if (saved.log?.length) setLog(saved.log);
+          if (saved.qCount) setQCount(saved.qCount);
+          if (saved.score) setScore(saved.score);
+          if (saved.bestGuess) setBestGuess(saved.bestGuess);
+          if (saved.startTime) {
+            setStartTime(saved.startTime);
+            startTimeRef.current = saved.startTime;
+          }
+          if (saved.won) setWon(saved.won);
+          if (saved.winData) setWinData(saved.winData);
+          if (saved.maxQ) setMaxQ(saved.maxQ);
+          if (saved.bubble) setBubble(saved.bubble);
+          if (saved.tone) setTone(saved.tone);
+        }
+      }
+    } catch (_) { /* 손상된 데이터 무시 */ }
+
+    loadedRef.current = true;
   }, []);
+
+  // 상태 변경 시 localStorage 저장 (초기 로드 완료 후에만)
+  useEffect(() => {
+    if (!loadedRef.current) return;
+    try {
+      localStorage.setItem(GAME_KEY, JSON.stringify({
+        date: todayKST(),
+        log, qCount, score, bestGuess, startTime, won, winData, maxQ, bubble, tone,
+      }));
+    } catch (_) { /* 저장 실패 무시 */ }
+  }, [log, qCount, score, bestGuess, startTime, won, winData, maxQ, bubble, tone]);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [log]);
-
-  const BASE_Q = 20;
-  const BONUS_Q = 10;
-  const [maxQ, setMaxQ] = useState(BASE_Q);
-  const [isWatchingAd, setIsWatchingAd] = useState(false);
 
   function isMetaWord(text: string) {
     const t = text.trim();
@@ -83,7 +125,7 @@ export default function Home() {
   async function handleQuestion(question: string) {
     if (won || qCount >= maxQ) return;
 
-    if (isMetaWord(question)) {
+    if (!question.includes("힌트") && isMetaWord(question)) {
       setBubble("그걸 물어보면 어떡해.");
       return;
     }
@@ -103,7 +145,6 @@ export default function Home() {
     });
     const data = await res.json();
 
-    // 질문일 때만 횟수 차감
     const nextCount = data.isQuestion ? qCount + 1 : qCount;
     if (data.isQuestion) setQCount(nextCount);
 
@@ -157,14 +198,13 @@ export default function Home() {
     return (
       <main className="flex min-h-full flex-col items-center justify-center gap-4 p-8">
         <p className="text-2xl">🐢</p>
-        <p className="text-zinc-400 text-sm">오늘 준비 중이야. 나중에 와.</p>
+        <p className="text-zinc-500 text-sm">오늘 준비 중이야. 나중에 와.</p>
       </main>
     );
   }
 
   return (
     <main className="flex min-h-full flex-col justify-between gap-4 py-10">
-      {/* 닉네임 입력 모달 */}
       {showNickname && <NicknameModal onSubmit={handleNicknameSubmit} />}
 
       {/* 제목 */}
@@ -173,7 +213,7 @@ export default function Home() {
         <p className="text-sm text-zinc-500">스무고개로 오늘의 단어를 맞춰봐.</p>
       </div>
 
-      {/* 하우투 + 말투 선택 */}
+      {/* 안내 + 말투 선택 */}
       <div className="mx-auto w-full max-w-xs space-y-2">
         <div className="rounded-xl bg-zinc-50 px-4 py-3 text-xs text-zinc-700 space-y-1.5">
           <p>💬 질문으로 단어를 추측해봐. 거북이가 예/아니오로 답해줘.</p>
@@ -200,7 +240,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 중단: 스탯 + 정답 카드 + 질문 로그 */}
+      {/* 중단: 스탯 + 정답 카드 + 최근 질문 */}
       <div className="flex flex-1 flex-col items-center gap-4 px-6 overflow-hidden">
         <StatsBar qCount={qCount} maxQ={maxQ} startTime={startTime} score={score} />
         {won && winData && (
@@ -223,7 +263,7 @@ export default function Home() {
                 <span className={`font-semibold ${
                   last.score >= 70 ? "text-emerald-500" :
                   last.score >= 40 ? "text-amber-500" :
-                  "text-zinc-400"
+                  "text-zinc-500"
                 }`}>{last.score}</span>
               )}
             </div>
@@ -231,7 +271,7 @@ export default function Home() {
         })()}
       </div>
 
-      {/* 하단: 입력창 + 거북이 */}
+      {/* 하단: 광고 버튼 + 입력창 + 거북이 + 근접 단어 리스트 */}
       <div className="flex flex-col items-center gap-4">
         {!won && qCount >= maxQ && (
           <button

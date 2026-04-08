@@ -45,6 +45,21 @@ export const SYSTEM_PROMPT = (word: string, tone: ToneType = "chic") => `
 ${TONE_RULES[tone]}
 `.trim();
 
+export const HINT_PROMPT = (word: string, tone: ToneType = "friendly") => `
+너는 '바다거북 스프' 스무고개 게임의 심판 거북이야.
+오늘의 단어는 "${word}"야.
+
+유저가 힌트를 요청했어. 다음 규칙을 따라 힌트 하나만 줘.
+
+[힌트 규칙]
+- 단어 "${word}"를 절대 직접 말하지 마.
+- 너무 구체적인 설명도 금지 (단어가 바로 떠오르면 안 됨).
+- 단어가 주는 느낌, 연상되는 상황, 단어가 속하는 넓은 카테고리 중 하나를 골라 간접적으로 알려줘.
+- 한 문장으로만.
+
+${TONE_RULES[tone]}
+`.trim();
+
 export const SIMILARITY_PROMPT = (word: string, guess: string) => `
 The answer word is "${word}".
 User's guess: "${guess}"

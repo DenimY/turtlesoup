@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { getSupabase } from "@/lib/supabase";
-import { SYSTEM_PROMPT, type ToneType } from "@/lib/prompts";
+import { SYSTEM_PROMPT, HINT_PROMPT, type ToneType } from "@/lib/prompts";
 import { calcSimilarity } from "@/lib/similarity";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
@@ -44,7 +44,22 @@ export async function POST(request: Request) {
       return Response.json({ answer: correctAnswer, correct: true, score: 100, isQuestion: false });
     }
 
-    // 2. 유사도 측정
+    // 2. 힌트 요청 감지
+    const isHintRequest = /힌트/.test(question.trim());
+    if (isHintRequest) {
+      console.log(`[힌트] 요청 → Gemini 호출`);
+      const hintRes = await ai.models.generateContent({
+        model: "gemini-2.5-flash-lite",
+        contents: "힌트 줘",
+        config: {
+          systemInstruction: HINT_PROMPT(word, t),
+          maxOutputTokens: 80,
+        },
+      });
+      return Response.json({ answer: hintRes.text ?? "...", correct: false, score: 0, isQuestion: true });
+    }
+
+    // 3. 유사도 측정
     const score = await calcSimilarity(word, question);
     console.log(`[유사도] word="${word}" | question="${question}" | score=${score}`);
 
