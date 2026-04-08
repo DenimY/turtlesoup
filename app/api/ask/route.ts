@@ -30,10 +30,18 @@ export async function POST(request: Request) {
 
     const word = wordData.word;
 
+    const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+    const t = (tone as ToneType);
+
     // 1. 정답 여부 먼저 체크 (정확히 일치)
     if (question.trim() === word) {
       console.log("[정답] 정확히 일치 → Gemini 호출 없음");
-      return Response.json({ answer: "...맞아.", correct: true, score: 100, isQuestion: false });
+      const correctAnswer = pick(
+        t === "chic"   ? ["...맞아. 잘했네.", "정답이야. 역시.", "맞췄군."] :
+        t === "grumpy" ? ["맞잖아! 왜 이제 맞춰!", "그게 맞아. 진짜로.", "어, 맞아. 됐어."] :
+                         ["맞아!!! 🎉", "정답이야!! 대단한데?!", "와, 맞췄어!!"]
+      );
+      return Response.json({ answer: correctAnswer, correct: true, score: 100, isQuestion: false });
     }
 
     // 2. 유사도 측정
@@ -42,7 +50,12 @@ export async function POST(request: Request) {
 
     if (score >= 100) {
       console.log("[정답] 유사도 100 → Gemini 호출 없음");
-      return Response.json({ answer: "...맞아.", correct: true, score, isQuestion: false });
+      const correctAnswer = pick(
+        t === "chic"   ? ["...맞아. 잘했네.", "정답이야. 역시.", "맞췄군."] :
+        t === "grumpy" ? ["맞잖아! 왜 이제 맞춰!", "그게 맞아. 진짜로.", "어, 맞아. 됐어."] :
+                         ["맞아!!! 🎉", "정답이야!! 대단한데?!", "와, 맞췄어!!"]
+      );
+      return Response.json({ answer: correctAnswer, correct: true, score, isQuestion: false });
     }
 
     // 3. 질문 여부 판별 (의문형 어미 + ?)
@@ -51,7 +64,29 @@ export async function POST(request: Request) {
 
     if (!isQuestion) {
       console.log(`[Gemini] 호출 없음 (단어 추측: "${question}")`);
-      return Response.json({ answer: "...", correct: false, score, isQuestion: false });
+
+      const guessAnswer =
+        score >= 80 ? pick(
+          t === "chic"    ? ["거의야.", "가깝네.", "조금만 더."] :
+          t === "grumpy"  ? ["거의 다 왔잖아.", "그게 뭐야, 거의잖아.", "조금만 더 해봐."] :
+                            ["거의 다 왔어~!", "엄청 가까운데?!", "조금만 더 해봐, 할 수 있어!"]
+        ) :
+        score >= 50 ? pick(
+          t === "chic"    ? ["비슷해.", "연관은 있어.", "가깝긴 한데."] :
+          t === "grumpy"  ? ["비슷하긴 한데 아니야.", "뭔가 연관은 있네.", "가깝긴 한데 틀렸어."] :
+                            ["오, 뭔가 비슷한 느낌!", "연관은 있는 것 같아~", "조금 더 생각해봐!"]
+        ) :
+        score >= 20 ? pick(
+          t === "chic"    ? ["멀어.", "방향이 달라.", "다시 생각해."] :
+          t === "grumpy"  ? ["아직 멀었어.", "방향이 완전 다른데.", "좀 더 생각해봐."] :
+                            ["음... 방향이 좀 다른 것 같아.", "아직 멀었어! 다시 해봐!", "흠, 다른 걸 생각해봐~"]
+        ) :
+        pick(
+          t === "chic"    ? ["관련 없어.", "완전 달라.", "아니야."] :
+          t === "grumpy"  ? ["전혀 관련 없잖아.", "완전 딴 얘기야.", "이게 뭐야."] :
+                            ["전혀 아닌 것 같은데!", "완전 다른 거야~", "힌트를 좀 더 모아봐!"]
+        );
+      return Response.json({ answer: guessAnswer, correct: false, score, isQuestion: false });
     }
 
     // 4. Gemini 호출

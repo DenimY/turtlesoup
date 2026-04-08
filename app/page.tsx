@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import TurtleChat from "@/components/TurtleChat";
-import ChatBubble from "@/components/ChatBubble";
 import StatsBar from "@/components/StatsBar";
+import GuessList from "@/components/GuessList";
 import InputBar from "@/components/InputBar";
 import WinScreen from "@/components/WinScreen";
 import NicknameModal from "@/components/NicknameModal";
@@ -170,17 +170,20 @@ export default function Home() {
       {/* 제목 */}
       <div className="flex flex-col items-center gap-1 px-6">
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900">🐢 바다거북 스프</h1>
-        <p className="text-sm text-zinc-400">스무고개로 오늘의 단어를 맞춰봐.</p>
+        <p className="text-sm text-zinc-500">스무고개로 오늘의 단어를 맞춰봐.</p>
       </div>
 
       {/* 하우투 + 말투 선택 */}
       <div className="mx-auto w-full max-w-xs space-y-2">
-        <div className="rounded-xl bg-zinc-50 px-4 py-3 text-xs text-zinc-500 space-y-1">
+        <div className="rounded-xl bg-zinc-50 px-4 py-3 text-xs text-zinc-700 space-y-1.5">
           <p>💬 질문으로 단어를 추측해봐. 거북이가 예/아니오로 답해줘.</p>
-          <p>🎯 단어를 알아냈으면 그냥 입력하면 돼. 기본 질문 횟수는 20개.</p>
+          <p>🎯 단어를 알아냈으면 물음표 없이 그냥 입력하면 돼. 기본 질문 횟수는 20개.</p>
+          <p className="text-zinc-500">· 유사도 100점 또는 정확히 일치하면 정답으로 인식해.</p>
+          <p className="text-zinc-500">· 물음표(?)나 질문 어미(야?, 이야?, 나요? 등)로 끝나면 질문으로 간주해서 횟수가 차감돼.</p>
+          <p className="text-zinc-500">· 정답을 말할 땐 단어만 단독으로 입력해야 정답으로 인식해.</p>
         </div>
         <div className="flex items-center gap-2 px-1">
-          <span className="text-xs text-zinc-400">말투</span>
+          <span className="text-xs text-zinc-600 font-medium">말투</span>
           {(Object.keys(TONE_LABELS) as ToneType[]).map((t) => (
             <button
               key={t}
@@ -188,7 +191,7 @@ export default function Home() {
               className={`rounded-full px-3 py-1 text-xs transition-colors ${
                 tone === t
                   ? "bg-zinc-800 text-white"
-                  : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
               }`}
             >
               {TONE_LABELS[t]}
@@ -199,7 +202,7 @@ export default function Home() {
 
       {/* 중단: 스탯 + 정답 카드 + 질문 로그 */}
       <div className="flex flex-1 flex-col items-center gap-4 px-6 overflow-hidden">
-        <StatsBar qCount={qCount} maxQ={maxQ} startTime={startTime} score={score} bestGuess={bestGuess} log={log} />
+        <StatsBar qCount={qCount} maxQ={maxQ} startTime={startTime} score={score} />
         {won && winData && (
           <WinScreen
             word={winData.word}
@@ -208,14 +211,24 @@ export default function Home() {
             rank={winData.rank}
           />
         )}
-        {log.length > 0 && (
-          <div className="w-full max-w-xs space-y-2 max-h-60 overflow-y-auto">
-            {log.map((entry, i) => (
-              <ChatBubble key={i} question={entry.question} answer={entry.answer} isQuestion={entry.isQuestion} />
-            ))}
-            <div ref={logEndRef} />
-          </div>
-        )}
+        {log.length > 0 && (() => {
+          const last = log[log.length - 1];
+          return (
+            <div className="w-full max-w-xs flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2 text-xs">
+              <div className="flex items-center gap-1.5">
+                <span className="text-zinc-700 font-medium">{last.question}</span>
+                {last.isQuestion && <span className="text-violet-500 font-semibold">Q</span>}
+              </div>
+              {last.score > 0 && (
+                <span className={`font-semibold ${
+                  last.score >= 70 ? "text-emerald-500" :
+                  last.score >= 40 ? "text-amber-500" :
+                  "text-zinc-400"
+                }`}>{last.score}</span>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* 하단: 입력창 + 거북이 */}
@@ -237,6 +250,7 @@ export default function Home() {
         )}
         <InputBar onSubmit={handleQuestion} disabled={isThinking || won || qCount >= maxQ || isWatchingAd} />
         <TurtleChat bubble={bubble} isThinking={isThinking} />
+        <GuessList log={log} />
       </div>
     </main>
   );
