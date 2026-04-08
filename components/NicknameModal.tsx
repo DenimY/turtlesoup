@@ -1,17 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type Props = {
   onSubmit: (nickname: string) => void;
 };
 
 export default function NicknameModal({ onSubmit }: Props) {
-  const [value, setValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isEmpty, setIsEmpty] = useState(true);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onSubmit(value.trim() || "익명");
+    const val = inputRef.current?.value.trim() ?? "";
+    onSubmit(val || "익명");
+  }
+
+  function handleChange() {
+    const val = inputRef.current?.value ?? "";
+    setIsEmpty(val.trim().length === 0);
   }
 
   return (
@@ -25,9 +32,10 @@ export default function NicknameModal({ onSubmit }: Props) {
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <input
+            ref={inputRef}
             type="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
+            onChange={handleChange}
+            onCompositionEnd={handleChange}
             placeholder="닉네임 (최대 10자)"
             maxLength={10}
             autoFocus
@@ -37,7 +45,7 @@ export default function NicknameModal({ onSubmit }: Props) {
             type="submit"
             className="rounded-full bg-zinc-800 py-2 text-sm font-medium text-white hover:bg-zinc-700"
           >
-            {value.trim() ? "등록" : "익명으로 등록"}
+            {isEmpty ? "익명으로 등록" : "등록"}
           </button>
         </form>
       </div>

@@ -120,6 +120,7 @@ export default function Home() {
   }
 
   async function handleNicknameSubmit(nickname: string) {
+    console.log("[nickname] submitted:", JSON.stringify(nickname));
     setShowNickname(false);
     if (!pendingWin) return;
 

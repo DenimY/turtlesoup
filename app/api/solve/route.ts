@@ -1,7 +1,9 @@
 import { getSupabase, getSupabaseAdmin } from "@/lib/supabase";
 
 export async function POST(request: Request) {
-  const { session_id, q_count, elapsed_sec, nickname } = await request.json();
+  const body = await request.json();
+  console.log("[solve] received body:", JSON.stringify(body));
+  const { session_id, q_count, elapsed_sec, nickname } = body;
 
   if (!session_id) {
     return Response.json({ error: "세션 없어." }, { status: 400 });
@@ -33,7 +35,7 @@ export async function POST(request: Request) {
   const rank = (count ?? 0) + 1;
 
   const supabaseAdmin = getSupabaseAdmin();
-  await supabaseAdmin.from("solves").insert({
+  const { error: insertError } = await supabaseAdmin.from("solves").insert({
     date: today,
     session_id,
     q_count,
@@ -41,6 +43,11 @@ export async function POST(request: Request) {
     rank,
     nickname: nickname?.trim() || "익명",
   });
+
+  if (insertError) {
+    console.error("[solve] insert error:", insertError);
+    return Response.json({ error: insertError.message }, { status: 500 });
+  }
 
   return Response.json({ rank });
 }

@@ -8,9 +8,7 @@ export async function GET(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const date = tomorrow.toLocaleDateString("sv-SE", {
+  const date = new Date().toLocaleDateString("sv-SE", {
     timeZone: "Asia/Seoul",
   });
 
