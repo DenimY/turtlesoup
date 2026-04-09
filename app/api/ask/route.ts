@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       console.log(`[Gemini] 호출 없음 (단어 추측: "${question}")`);
 
       if (similarityError) {
-        return Response.json({ answer: "나도 모르겠어.", correct: false, score: 0, isQuestion: false, _dev: "similarity_error" });
+        return Response.json({ answer: "틀렸어~😢", correct: false, score: 0, isQuestion: false, _dev: "similarity_error" });
       }
 
       const guessAnswer =
@@ -113,16 +113,22 @@ export async function POST(request: Request) {
 
     // 4. Gemini 호출
     console.log(`[Gemini] 호출 중 | 질문: "${question}"`);
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
-      contents: question,
-      config: {
-        systemInstruction: SYSTEM_PROMPT(word, tone as ToneType),
-        maxOutputTokens: 50,
-      },
-    });
-
-    const answer = response.text ?? "...";
+    let answer: string;
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-lite",
+        contents: question,
+        config: {
+          systemInstruction: SYSTEM_PROMPT(word, tone as ToneType),
+          maxOutputTokens: 50,
+        },
+      });
+      answer = response.text?.trim() ?? "...";
+    } catch (geminiErr) {
+      console.error("[Gemini] 응답 실패:", geminiErr);
+      // Gemini 실패 시 횟수 차감 안 함 (isQuestion: false)
+      return Response.json({ answer: "나도 모르겠어.", correct: false, score: 0, isQuestion: false });
+    }
 
     return Response.json({ answer, correct: false, score, isQuestion: true, _dev: similarityError ? "similarity_error" : undefined });
   } catch (err) {

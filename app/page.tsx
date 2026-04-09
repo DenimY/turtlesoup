@@ -30,7 +30,7 @@ const META_WORDS = [
 ];
 
 const BASE_Q = 20;
-const BONUS_Q = 10;
+const BONUS_Q = 5;
 const GAME_KEY = "ts_game";
 
 function getOrCreateSessionId(): string {
@@ -62,7 +62,6 @@ export default function Home() {
   const [pendingWin, setPendingWin] = useState<{ qCount: number; elapsedSec: number } | null>(null);
   const [tone, setTone] = useState<ToneType>("friendly");
   const [maxQ, setMaxQ] = useState(BASE_Q);
-  const [isWatchingAd, setIsWatchingAd] = useState(false);
 
   const sessionIdRef = useRef<string>("");
   const startTimeRef = useRef<number | null>(null);
@@ -278,21 +277,15 @@ export default function Home() {
       {/* 하단: 광고 버튼 + 입력창 + 거북이 + 근접 단어 리스트 */}
       <div className="flex flex-col items-center gap-4">
         {!won && qCount >= maxQ && (
+          // TODO: 광고 시청 후 질문 추가 기능 연동 (광고 SDK 삽입 후 onClick 내부에서 광고 재생 → 완료 콜백에서 setMaxQ 호출)
           <button
-            onClick={() => {
-              setIsWatchingAd(true);
-              setTimeout(() => {
-                setMaxQ((prev) => prev + BONUS_Q);
-                setIsWatchingAd(false);
-              }, 5000);
-            }}
-            disabled={isWatchingAd}
-            className="rounded-full bg-amber-400 px-5 py-2 text-sm font-medium text-white hover:bg-amber-300 disabled:opacity-50 transition-colors"
+            onClick={() => setMaxQ((prev) => prev + BONUS_Q)}
+            className="rounded-full bg-amber-400 px-5 py-2 text-sm font-medium text-white hover:bg-amber-300 transition-colors"
           >
-            {isWatchingAd ? "광고 시청 중... 잠시만 기다려줘" : "광고 보고 질문 10회 추가"}
+            질문 {BONUS_Q}회 추가
           </button>
         )}
-        <InputBar onSubmit={handleQuestion} disabled={isThinking || won || qCount >= maxQ || isWatchingAd} />
+        <InputBar onSubmit={handleQuestion} disabled={isThinking || won || qCount >= maxQ} />
         <TurtleChat bubble={bubble} isThinking={isThinking} />
         <GuessList log={log} />
       </div>
