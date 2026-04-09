@@ -62,6 +62,7 @@ export default function Home() {
   const [pendingWin, setPendingWin] = useState<{ qCount: number; elapsedSec: number } | null>(null);
   const [tone, setTone] = useState<ToneType>("friendly");
   const [maxQ, setMaxQ] = useState(BASE_Q);
+  const [showGuideDetail, setShowGuideDetail] = useState(false);
 
   const sessionIdRef = useRef<string>("");
   const startTimeRef = useRef<number | null>(null);
@@ -216,31 +217,23 @@ export default function Home() {
         <p className="text-sm text-zinc-500">스무고개로 오늘의 단어를 맞춰봐.</p>
       </div>
 
-      {/* 안내 + 말투 선택 */}
-      <div className="mx-auto w-full max-w-xs space-y-2">
-        <div className="rounded-xl bg-zinc-50 px-4 py-3 text-xs text-zinc-700 space-y-1.5">
-          <p>💬 질문으로 단어를 추측해봐. 거북이가 예/아니오로 답해줘.</p>
-          <p>🎯 단어를 알아냈으면 물음표 없이 그냥 입력하면 돼. 기본 질문 횟수는 20개.</p>
-          <p className="text-zinc-500">· 유사도 100점 또는 정확히 일치하면 정답으로 인식해.</p>
-          <p className="text-zinc-500">· 물음표(?)나 질문 어미(야?, 이야?, 나요? 등)로 끝나면 질문으로 간주해서 횟수가 차감돼.</p>
-          <p className="text-zinc-500">· 정답을 말할 땐 단어만 단독으로 입력해야 정답으로 인식해.</p>
-        </div>
-        <div className="flex items-center gap-2 px-1">
-          <span className="text-xs text-zinc-600 font-medium">말투</span>
-          {(Object.keys(TONE_LABELS) as ToneType[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTone(t)}
-              className={`rounded-full px-3 py-1 text-xs transition-colors ${
-                tone === t
-                  ? "bg-zinc-800 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              }`}
-            >
-              {TONE_LABELS[t]}
-            </button>
-          ))}
-        </div>
+      {/* 안내 */}
+      <div className="mx-auto w-full max-w-xs rounded-xl bg-zinc-50 px-4 py-3 text-xs text-zinc-700 space-y-1.5">
+        <p>💬 질문으로 단어를 추측해봐. 거북이가 예/아니오로 답해줘.</p>
+        <p>🎯 단어를 알아냈으면 물음표 없이 그냥 입력하면 돼. 기본 질문 횟수는 20개.</p>
+        <button
+          onClick={() => setShowGuideDetail((v) => !v)}
+          className="text-zinc-400 hover:text-zinc-600 transition-colors"
+        >
+          {showGuideDetail ? "▲ 접기" : "▼ 자세히"}
+        </button>
+        {showGuideDetail && (
+          <div className="space-y-1 pt-0.5">
+            <p className="text-zinc-500">· 유사도 100점 또는 정확히 일치하면 정답으로 인식해.</p>
+            <p className="text-zinc-500">· 물음표(?)나 질문 어미(야?, 이야?, 나요? 등)로 끝나면 질문으로 간주해서 횟수가 차감돼.</p>
+            <p className="text-zinc-500">· 정답을 말할 땐 단어만 단독으로 입력해야 정답으로 인식해.</p>
+          </div>
+        )}
       </div>
 
       {/* 중단: 스탯 + 정답 카드 + 최근 질문 */}
@@ -288,6 +281,29 @@ export default function Home() {
         <InputBar onSubmit={handleQuestion} disabled={isThinking || won || qCount >= maxQ} />
         <TurtleChat bubble={bubble} isThinking={isThinking} />
         <GuessList log={log} />
+        <div className="mx-auto w-full max-w-xs space-y-2 pt-2">
+          <div className="rounded-xl bg-zinc-50 px-4 py-3 text-xs text-zinc-500 space-y-1">
+            <p>· 유사도 100점 또는 정확히 일치하면 정답으로 인식해.</p>
+            <p>· 물음표(?)나 질문 어미(야?, 이야?, 나요? 등)로 끝나면 질문으로 간주해서 횟수가 차감돼.</p>
+            <p>· 정답을 말할 땐 단어만 단독으로 입력해야 정답으로 인식해.</p>
+          </div>
+          <div className="flex items-center gap-2 px-1">
+            <span className="text-xs text-zinc-600 font-medium">말투</span>
+            {(Object.keys(TONE_LABELS) as ToneType[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTone(t)}
+                className={`rounded-full px-3 py-1 text-xs transition-colors ${
+                  tone === t
+                    ? "bg-zinc-800 text-white"
+                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                }`}
+              >
+                {TONE_LABELS[t]}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </main>
   );

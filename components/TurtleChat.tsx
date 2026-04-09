@@ -12,8 +12,8 @@ export default function TurtleChat({ bubble, isThinking }: Props) {
       <img
         src="/turtle.png"
         alt="거북이"
-        width={320}
-        height={320}
+        width={256}
+        height={256}
         className="shrink-0 select-none object-contain drop-shadow-md"
         onError={(e) => {
           (e.currentTarget as HTMLImageElement).replaceWith(
