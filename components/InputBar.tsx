@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   onSubmit: (question: string) => void;
@@ -9,6 +9,7 @@ type Props = {
 
 export default function InputBar({ onSubmit, disabled }: Props) {
   const [value, setValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -16,7 +17,12 @@ export default function InputBar({ onSubmit, disabled }: Props) {
     if (!trimmed || disabled) return;
     onSubmit(trimmed);
     setValue("");
+    setTimeout(() => inputRef.current?.focus(), 0);
   }
+
+  useEffect(() => {
+    if (!disabled) inputRef.current?.focus();
+  }, [disabled]);
 
   return (
     <form
@@ -24,6 +30,7 @@ export default function InputBar({ onSubmit, disabled }: Props) {
       className="flex w-full max-w-xs gap-2"
     >
       <input
+        ref={inputRef}
         type="text"
         value={value}
         onChange={(e) => setValue(e.target.value)}

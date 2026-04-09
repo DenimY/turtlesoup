@@ -18,8 +18,7 @@ export default function GuessList({ log }: { log: LogEntry[] }) {
     }
   }
   const topGuesses = [...seen.values()]
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 20);
+    .sort((a, b) => b.score - a.score);
 
   if (topGuesses.length === 0) return null;
 
