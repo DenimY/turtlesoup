@@ -30,8 +30,9 @@ const META_WORDS = [
 ];
 
 const BASE_Q = 20;
-const BONUS_Q = 5;
+const BONUS_Q = 10;
 const GAME_KEY = "ts_game";
+const WINS_KEY = "ts_wins";
 
 function getOrCreateSessionId(): string {
   const key = "ts_session";
@@ -56,18 +57,17 @@ export default function Home() {
   const [bestGuess, setBestGuess] = useState<{ word: string; score: number } | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [won, setWon] = useState(false);
-  const [winData, setWinData] = useState<WinData | null>(null);
+  const [wins, setWins] = useState<WinData[]>([]);
   const [noWord, setNoWord] = useState(false);
   const [showNickname, setShowNickname] = useState(false);
   const [pendingWin, setPendingWin] = useState<{ qCount: number; elapsedSec: number } | null>(null);
   const [tone, setTone] = useState<ToneType>("friendly");
   const [maxQ, setMaxQ] = useState(BASE_Q);
   const [showGuideDetail, setShowGuideDetail] = useState(false);
+  const [customWord, setCustomWord] = useState<string | null>(null);
 
   const sessionIdRef = useRef<string>("");
   const startTimeRef = useRef<number | null>(null);
-  const logEndRef = useRef<HTMLDivElement>(null);
-  // 초기 로드가 완료되기 전에 save effect가 빈 상태를 덮어쓰지 않도록 방지
   const loadedRef = useRef(false);
 
   // 마운트: 세션 ID, 오늘 단어 확인, 저장된 상태 복원
@@ -77,6 +77,8 @@ export default function Home() {
       .then((r) => { if (!r.ok) setNoWord(true); })
       .catch(() => setNoWord(true));
 
+    // 1) 일반 게임 복원 (localStorage)
+    let dailyWinData: WinData | null = null;
     try {
       const raw = localStorage.getItem(GAME_KEY);
       if (raw) {
@@ -86,12 +88,9 @@ export default function Home() {
           if (saved.qCount) setQCount(saved.qCount);
           if (saved.score) setScore(saved.score);
           if (saved.bestGuess) setBestGuess(saved.bestGuess);
-          if (saved.startTime) {
-            setStartTime(saved.startTime);
-            startTimeRef.current = saved.startTime;
-          }
+          if (saved.startTime) { setStartTime(saved.startTime); startTimeRef.current = saved.startTime; }
           if (saved.won) setWon(saved.won);
-          if (saved.winData) setWinData(saved.winData);
+          if (saved.winData) dailyWinData = saved.winData;
           if (saved.maxQ) setMaxQ(saved.maxQ);
           if (saved.bubble) setBubble(saved.bubble);
           if (saved.tone) setTone(saved.tone);
@@ -99,27 +98,70 @@ export default function Home() {
       }
     } catch (_) { /* 손상된 데이터 무시 */ }
 
+    // 2) 커스텀 게임 복원 (sessionStorage) — 일반 게임보다 우선
+    try {
+      const raw = sessionStorage.getItem(GAME_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        setCustomWord(saved.customWord ?? null);
+        setLog(saved.log?.length ? saved.log : []);
+        setQCount(saved.qCount ?? 0);
+        setScore(saved.score ?? 0);
+        setBestGuess(saved.bestGuess ?? null);
+        if (saved.startTime) { setStartTime(saved.startTime); startTimeRef.current = saved.startTime; }
+        else { setStartTime(null); startTimeRef.current = null; }
+        setWon(saved.won ?? false);
+        if (saved.maxQ) setMaxQ(saved.maxQ);
+        if (saved.bubble) setBubble(saved.bubble);
+      }
+    } catch (_) { /* 손상된 데이터 무시 */ }
+
+    // 3) 누적 wins 복원 (sessionStorage) — 없으면 일반 정답으로 초기화
+    try {
+      const raw = sessionStorage.getItem(WINS_KEY);
+      if (raw) {
+        setWins(JSON.parse(raw));
+      } else if (dailyWinData) {
+        setWins([dailyWinData]);
+      }
+    } catch (_) { /* 손상된 데이터 무시 */ }
+
     loadedRef.current = true;
   }, []);
 
-  // 상태 변경 시 localStorage 저장 (초기 로드 완료 후에만)
+  // 일반 게임 저장
   useEffect(() => {
-    if (!loadedRef.current) return;
+    if (!loadedRef.current || customWord) return;
     try {
       localStorage.setItem(GAME_KEY, JSON.stringify({
         date: todayKST(),
-        log, qCount, score, bestGuess, startTime, won, winData, maxQ, bubble, tone,
+        log, qCount, score, bestGuess, startTime, won,
+        winData: wins[0] ?? null,
+        maxQ, bubble, tone,
       }));
     } catch (_) { /* 저장 실패 무시 */ }
-  }, [log, qCount, score, bestGuess, startTime, won, winData, maxQ, bubble, tone]);
+  }, [log, qCount, score, bestGuess, startTime, won, wins, maxQ, bubble, tone, customWord]);
 
+  // 커스텀 게임 저장
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [log]);
+    if (!loadedRef.current || !customWord) return;
+    try {
+      sessionStorage.setItem(GAME_KEY, JSON.stringify({
+        customWord, log, qCount, score, bestGuess, startTime, won, maxQ, bubble,
+      }));
+    } catch (_) { /* 저장 실패 무시 */ }
+  }, [customWord, log, qCount, score, bestGuess, startTime, won, maxQ, bubble]);
+
+  // wins 저장
+  useEffect(() => {
+    if (!loadedRef.current) return;
+    try {
+      sessionStorage.setItem(WINS_KEY, JSON.stringify(wins));
+    } catch (_) { /* 저장 실패 무시 */ }
+  }, [wins]);
 
   function isMetaWord(text: string) {
-    const t = text.trim();
-    return META_WORDS.some((w) => t.includes(w));
+    return META_WORDS.some((w) => text.trim().includes(w));
   }
 
   async function handleQuestion(question: string) {
@@ -141,7 +183,7 @@ export default function Home() {
     const res = await fetch("/api/ask", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question, tone }),
+      body: JSON.stringify({ question, tone, ...(customWord ? { customWord } : {}) }),
     });
     const data = await res.json();
 
@@ -165,9 +207,29 @@ export default function Home() {
       const elapsedSec = startTimeRef.current
         ? Math.floor((Date.now() - startTimeRef.current) / 1000)
         : 0;
-      setPendingWin({ qCount: nextCount, elapsedSec });
-      setShowNickname(true);
+      if (customWord) {
+        // 커스텀 게임 정답 — 랭킹 없이 바로 승리
+        setWon(true);
+        setWins((prev) => [...prev, { word: customWord, qCount: nextCount, elapsedSec, rank: 0 }]);
+      } else {
+        // 일반 게임 정답 — 닉네임 입력 후 랭킹 등록
+        setPendingWin({ qCount: nextCount, elapsedSec });
+        setShowNickname(true);
+      }
     }
+  }
+
+  function startNewCustomGame(word: string) {
+    setCustomWord(word);
+    setLog([]);
+    setQCount(0);
+    setScore(0);
+    setBestGuess(null);
+    setStartTime(null);
+    startTimeRef.current = null;
+    setWon(false);
+    setMaxQ(BASE_Q);
+    setBubble(TURTLE_WELCOME);
   }
 
   async function handleNicknameSubmit(nickname: string) {
@@ -190,12 +252,12 @@ export default function Home() {
     const solveData = await solveRes.json();
 
     setWon(true);
-    setWinData({
+    setWins((prev) => [...prev, {
       word: wordData.word ?? "???",
       qCount: pendingWin.qCount,
       elapsedSec: pendingWin.elapsedSec,
       rank: solveData.rank ?? 1,
-    });
+    }]);
   }
 
   if (noWord) {
@@ -236,17 +298,25 @@ export default function Home() {
         )}
       </div>
 
-      {/* 중단: 스탯 + 정답 카드 + 최근 질문 */}
+      {/* 중단: 스탯 + 누적 정답 카드 + 최근 질문 */}
       <div className="flex flex-1 flex-col items-center gap-4 px-6 overflow-hidden">
         <StatsBar qCount={qCount} maxQ={maxQ} startTime={startTime} score={score} />
-        {won && winData && (
-          <WinScreen
-            word={winData.word}
-            qCount={winData.qCount}
-            elapsedSec={winData.elapsedSec}
-            rank={winData.rank}
-          />
+        {customWord && (
+          <div className="w-full max-w-xs rounded-xl bg-violet-50 border border-violet-200 px-4 py-2.5 text-xs text-violet-700 space-y-0.5">
+            <p className="font-medium">개인 설정 단어로 진행 중이야.</p>
+            <p className="text-violet-500">⚠️ 다른 사람과 정답이 다를 수 있어.</p>
+          </div>
         )}
+        {wins.map((w, i) => (
+          <WinScreen
+            key={i}
+            word={w.word}
+            qCount={w.qCount}
+            elapsedSec={w.elapsedSec}
+            rank={w.rank}
+            onTryNewWord={i === wins.length - 1 && won ? startNewCustomGame : undefined}
+          />
+        ))}
         {log.length > 0 && (() => {
           const last = log[log.length - 1];
           return (
@@ -267,10 +337,10 @@ export default function Home() {
         })()}
       </div>
 
-      {/* 하단: 광고 버튼 + 입력창 + 거북이 + 근접 단어 리스트 */}
+      {/* 하단: 추가 질문 버튼 + 입력창 + 거북이 + 근접 단어 리스트 */}
       <div className="flex flex-col items-center gap-4">
         {!won && qCount >= maxQ && (
-          // TODO: 광고 시청 후 질문 추가 기능 연동 (광고 SDK 삽입 후 onClick 내부에서 광고 재생 → 완료 콜백에서 setMaxQ 호출)
+          // TODO: 광고 시청 후 질문 추가 기능 연동
           <button
             onClick={() => setMaxQ((prev) => prev + BONUS_Q)}
             className="rounded-full bg-amber-400 px-5 py-2 text-sm font-medium text-white hover:bg-amber-300 transition-colors"
@@ -286,6 +356,7 @@ export default function Home() {
             <p>· 유사도 100점 또는 정확히 일치하면 정답으로 인식해.</p>
             <p>· 물음표(?)나 질문 어미(야?, 이야?, 나요? 등)로 끝나면 질문으로 간주해서 횟수가 차감돼.</p>
             <p>· 정답을 말할 땐 단어만 단독으로 입력해야 정답으로 인식해.</p>
+            <p>· '새로운 정답으로 시도하기'는 개인 설정 단어로 진행되며, 다른 사람과 정답이 달라.</p>
           </div>
           <div className="flex items-center gap-2 px-1">
             <span className="text-xs text-zinc-600 font-medium">말투</span>

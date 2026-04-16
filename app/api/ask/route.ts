@@ -7,7 +7,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 export async function POST(request: Request) {
   try {
-    const { question, tone = "friendly" } = await request.json();
+    const { question, tone = "friendly", customWord: customWordParam } = await request.json();
 
     if (!question?.trim()) {
       return Response.json({ error: "질문이 없어." }, { status: 400 });
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "오늘 단어가 없어." }, { status: 404 });
     }
 
-    const word = wordData.word;
+    const word = customWordParam?.trim() || wordData.word;
 
     const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
     const t = (tone as ToneType);

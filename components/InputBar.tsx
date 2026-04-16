@@ -5,9 +5,10 @@ import { useEffect, useRef, useState } from "react";
 type Props = {
   onSubmit: (question: string) => void;
   disabled: boolean;
+  placeholder?: string;
 };
 
-export default function InputBar({ onSubmit, disabled }: Props) {
+export default function InputBar({ onSubmit, disabled, placeholder = "질문하거나 정답을 맞춰봐..." }: Props) {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -35,7 +36,7 @@ export default function InputBar({ onSubmit, disabled }: Props) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         disabled={disabled}
-        placeholder="질문하거나 정답을 맞춰봐..."
+        placeholder={placeholder}
         className="flex-1 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-800 placeholder-zinc-300 outline-none focus:border-zinc-400 disabled:opacity-50"
         autoComplete="off"
       />
